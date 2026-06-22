@@ -1,0 +1,10 @@
+# Dataset para detectar el marco del sudoku con YOLO. Una sola clase.
+# Imagenes/labels (formato YOLO) en data/{images,labels}/{train,val,test}.
+path: /Users/nora/Documentos_Clase/BOOTCAMP/sudoku/data
+
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: sudoku
