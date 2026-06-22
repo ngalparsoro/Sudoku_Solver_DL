@@ -24,7 +24,6 @@ sys.path.insert(0, str(ROOT / "src"))
 import main as pipeline_mod
 import solver
 import solver_gnn
-import solver_cnn
 
 st.set_page_config(page_title="Sudoku Solver", page_icon="🧩", layout="wide")
 
@@ -250,15 +249,6 @@ def cargar_gnn(device):
         return None
 
 
-@st.cache_resource(show_spinner="Cargando solver neuronal (CNN 1M)...")
-def cargar_cnn():
-    """Carga la CNN (Keras) entrenada en 1M. Devuelve None si no hay modelo."""
-    try:
-        return solver_cnn.CNNSolver()
-    except FileNotFoundError:
-        return None
-
-
 # ============================================================ APP
 inyectar_estilo()
 
@@ -348,81 +338,63 @@ if res.solucion is None:
     st.stop()
 st.success("✅ La lectura es un sudoku válido (sin conflictos).")
 
-# ---------------------------------------------------------------- modelos neuronales
+# ---------------------------------------------------------------- resolución: GNN vs solver
 st.markdown("")
-paso("3", "Solución por modelos neuronales", "s3")
-st.caption("Dos redes que **aprenden** a resolver, cada una comparada contra el "
-           "**backtracking** de `solver.py` (la verdad de referencia, siempre exacta).")
+paso("3", "Solución: modelo GNN y solver de referencia", "s3")
+st.caption("A la izquierda, la **GNN** que *aprende* a resolver por paso de mensajes "
+           "entre celdas; a la derecha, el **backtracking** de `solver.py`, la verdad "
+           "de referencia (siempre exacta).")
 
 gnn = cargar_gnn(device)
-cnn = cargar_cnn()
-
-# calcular la solucion de cada modelo (None si el modelo no esta entrenado)
 sol_gnn = gnn.solve(res.leido) if gnn is not None else None
-with st.spinner("La CNN resuelve iterando celda a celda..."):
-    sol_cnn = cnn.solve(res.leido) if cnn is not None else None
 
+cgnn, csolver = st.columns(2)
 
-def bloque_modelo(nombre, descripcion, solucion):
-    """Pinta la rejilla de un modelo y sus metricas frente al solver."""
-    if solucion is None:
-        st.info(f"ℹ️ Modelo **{nombre}** no disponible todavía.")
-        return None
-    met = solver.evaluar_solucion(solucion, res.solucion)
-    st.markdown(f"**{nombre}** &nbsp;<span style='color:#8b96ad;font-size:.85rem'>"
-                f"{descripcion}</span>", unsafe_allow_html=True)
-    st.markdown(grid_html(res.leido, solucion), unsafe_allow_html=True)
-    a, b = st.columns(2)
-    a.metric("Celdas correctas", f"{met['celdas_correctas']}/81")
-    b.metric("Precisión", f"{met['precision']:.0%}")
-    if met["exacta"]:
-        st.success("✅ Tablero **exacto** (idéntico al solver).")
-    else:
-        st.warning("⚠️ No coincide del todo con el solver.")
-    return met
-
-cgnn, ccnn = st.columns(2)
+# ---- columna izquierda: GNN ----
+met_gnn = None
 with cgnn:
-    met_gnn = bloque_modelo("GNN (red de grafos)",
-                            "paso de mensajes entre celdas", sol_gnn)
-with ccnn:
-    met_cnn = bloque_modelo("CNN (entrenada en 1M)",
-                            "iterativa, rellena la celda más segura", sol_cnn)
+    st.markdown("**GNN (red de grafos)** &nbsp;<span style='color:#8b96ad;font-size:.85rem'>"
+                "paso de mensajes entre celdas</span>", unsafe_allow_html=True)
+    if sol_gnn is None:
+        st.info("ℹ️ Modelo **GNN** no disponible todavía.")
+    else:
+        met_gnn = solver.evaluar_solucion(sol_gnn, res.solucion)
+        st.markdown(grid_html(res.leido, sol_gnn), unsafe_allow_html=True)
+        a, b = st.columns(2)
+        a.metric("Celdas correctas", f"{met_gnn['celdas_correctas']}/81")
+        b.metric("Precisión", f"{met_gnn['precision']:.0%}")
+        if met_gnn["exacta"]:
+            st.success("✅ Tablero **exacto** (idéntico al solver).")
+        else:
+            st.warning("⚠️ No coincide del todo con el solver.")
 
-# ---------------------------------------------------------------- solver de referencia
-st.markdown("")
-paso("4", "Verificación y resolución (programática)", "s4")
-c1, c2 = st.columns([1, 1])
-with c1:
+# ---- columna derecha: solver de referencia ----
+with csolver:
     st.markdown(
-        "**Solución** &nbsp; <span style='font-family:JetBrains Mono;font-size:.8rem;color:#8b96ad'>"
+        "**Backtracking (solver.py)** &nbsp; <span style='font-family:JetBrains Mono;font-size:.8rem;color:#8b96ad'>"
         "<span style='color:#22d3ee'>■</span> leído &nbsp; "
         "<span style='color:#a3e635'>■</span> resuelto</span>",
         unsafe_allow_html=True,
     )
     st.markdown(grid_html(res.leido, res.solucion), unsafe_allow_html=True)
-with c2:
     if res.imagen_solucion is not None:
         st.image(bgr2rgb(res.imagen_solucion),
                  caption="🖼️ Solución superpuesta sobre la foto", use_container_width=True)
 
 st.success("🎉 ¡Sudoku resuelto!")
 
-# ---- tabla resumen: los tres motores frente a la referencia ----
-st.markdown("**Comparativa de los tres motores de resolución**")
+# ---- tabla resumen: GNN frente a la referencia ----
+st.markdown("**Comparativa de los motores de resolución**")
 filas = [("🔢 Backtracking (solver.py)", "81/81", "100%", "✅ (referencia)")]
 if met_gnn is not None:
     filas.append(("🕸️ GNN", f"{met_gnn['celdas_correctas']}/81",
                   f"{met_gnn['precision']:.0%}", "✅" if met_gnn["exacta"] else "❌"))
-if met_cnn is not None:
-    filas.append(("🧠 CNN (1M)", f"{met_cnn['celdas_correctas']}/81",
-                  f"{met_cnn['precision']:.0%}", "✅" if met_cnn["exacta"] else "❌"))
 st.table({
     "Motor": [f[0] for f in filas],
     "Celdas correctas": [f[1] for f in filas],
     "Precisión": [f[2] for f in filas],
     "Exacta": [f[3] for f in filas],
 })
-st.caption("El **backtracking** es el motor fiable; GNN y CNN son alternativas "
-           "**aprendidas** que se miden contra él. Ambas parten de lo que leyó la CNN "
-           "de dígitos, así que un error de lectura las afecta igual.")
+st.caption("El **backtracking** es el motor fiable; la **GNN** es una alternativa "
+           "*aprendida* que se mide contra él. Parte de lo que leyó la CNN de dígitos, "
+           "así que un error de lectura también la afecta.")
