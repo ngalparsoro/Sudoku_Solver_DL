@@ -1,6 +1,0 @@
-train: images/train
-test: images/test
-val: images/val
-
-nc: 1
-names: ['sudoku']
