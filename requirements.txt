@@ -1,0 +1,20 @@
+# Sudoku Solver — Vision Pipeline
+# Python 3.12 (probado en 3.12.13, entorno py312_arm / Apple Silicon)
+
+# Visión y detección
+opencv-python==4.13.0.92
+ultralytics==8.4.69        # YOLOv8 (detección del tablero)
+
+# Deep learning
+torch==2.12.0
+torchvision==0.27.0
+keras==3.14.1              # solver CNN (1M sudokus)
+tensorflow==2.21.0         # backend de Keras
+
+# App y utilidades
+streamlit==1.58.0
+numpy==2.4.6
+pillow==12.2.0
+pandas==3.0.3
+scipy==1.17.1
+matplotlib==3.10.9

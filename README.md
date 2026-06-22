@@ -64,7 +64,7 @@ python src/detector.py foto.jpg    # guarda detected.png con la caja del tablero
 
 ## 📦 Instalación
 
-Requiere **Python 3.11+** (probado en 3.13).
+Requiere **Python 3.12**.
 
 ```bash
 # entorno virtual
@@ -72,7 +72,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 # dependencias
-pip install streamlit ultralytics torch torchvision opencv-python numpy keras
+pip install -r requirements.txt
 ```
 
 > En Mac con Apple Silicon, el pipeline usa **MPS** automáticamente si está
@@ -82,18 +82,17 @@ pip install streamlit ultralytics torch torchvision opencv-python numpy keras
 
 ## 🧠 Modelos
 
-Los pesos **no se incluyen** en el repositorio. Hay que entrenarlos o colocarlos en
-la carpeta `models/`:
+Los pesos entrenados están en la carpeta `models/`:
 
-| Archivo esperado | Modelo | Se entrena en |
-|------------------|--------|---------------|
+| Archivo | Modelo | Se entrena en |
+|---------|--------|---------------|
 | `models/sudoku_detector.pt` | YOLO (detección del tablero) | [notebooks/1_detector_dev.ipynb](notebooks/1_detector_dev.ipynb) |
 | `models/digit_cnn.pt` | CNN de dígitos (MNIST) | [notebooks/3_recognizer_dev.ipynb](notebooks/3_recognizer_dev.ipynb) |
 | `models/sudoku_solver_gnn.pt` | GNN solver | [notebooks/6_solver_gnn_dev.ipynb](notebooks/6_solver_gnn_dev.ipynb) |
 | `models/cnn_1m.keras` | CNN solver (1M sudokus) | [notebooks/5_solver_nn_dev.ipynb](notebooks/5_solver_nn_dev.ipynb) |
 
-La app degrada con elegancia: si la GNN o la CNN no están entrenadas, simplemente
-las marca como *no disponibles* y sigue funcionando con el backtracking.
+La app degrada con elegancia: si falta algún modelo de solver (GNN/CNN), lo marca
+como *no disponible* y sigue funcionando con el backtracking.
 
 ---
 
@@ -128,7 +127,7 @@ Cada etapa se desarrolla y entrena en su propio notebook (`notebooks/`):
 │   ├── images/{train,val,test}/   # dataset de tableros
 │   ├── labels/{train,val,test}/   # etiquetas YOLO
 │   └── sudoku.yaml                # config del dataset YOLO
-└── models/                # pesos entrenados (no versionados)
+└── models/                # pesos entrenados
 ```
 
 ---
